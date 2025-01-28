@@ -9,10 +9,11 @@ import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const user = useSelector((state) => state.auth.user);
-
   const RequireAuth = ({ children }) => {
-    return user ? children : <Navigate to="/login" />;
+    const { isAuthenticated } = useSelector((state) => state.auth);
+
+    // Redirect to login page if not authenticated
+    return isAuthenticated ? children : <Navigate to="/" />;
   };
 
   return (

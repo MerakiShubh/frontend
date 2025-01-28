@@ -1,20 +1,39 @@
 import { useState } from "react";
-import { useLoginMutation } from "../api/apiSlice";
+import { useLoginUserMutation } from "../api/apiSlice";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setAccessToken, setUser } from "../store/feature/authSlice";
+import useAuth from "../hooks/useAuth";
 
 const LoginPage = () => {
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [login, { isLoading, error }] = useLoginMutation();
+  const [login, { isLoading, error }] = useLoginUserMutation();
+
+  const navigate = useNavigate();
+  const isAuthenticated = useAuth();
+  const dispatch = useDispatch();
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate("/dashboard");
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const response = await login({ emailOrUsername, password }).unwrap();
       console.log("Login successful:", response);
-      // Save tokens to localStorage or manage them via state
+
+      // Store token in localStorage
       localStorage.setItem("accessToken", response.data.accessToken);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+
+      // Update Redux state
+      dispatch(setUser(response.data.user));
+      dispatch(setAccessToken(response.data.accessToken));
+
+      // Navigate to dashboard
+      navigate("/dashboard");
     } catch (err) {
       console.error("Login failed:", err);
     }
@@ -22,7 +41,7 @@ const LoginPage = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-400 to-indigo-500">
-      <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-lg">
+      <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-xl">
         <h2 className="mb-6 text-2xl font-extrabold text-center text-gray-800">
           Welcome Back!
         </h2>
@@ -71,9 +90,9 @@ const LoginPage = () => {
             {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
-        {error && (
+        {error && error.data?.message && (
           <p className="mt-4 text-sm font-medium text-center text-red-500">
-            {error.data?.message || "An error occurred"}
+            {error.data.message}
           </p>
         )}
       </div>
